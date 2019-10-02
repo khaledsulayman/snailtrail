@@ -14,7 +14,7 @@ Similar to [Timely Diagnostics](https://github.com/timelydataflow/diagnostics), 
 
 ## Getting Started
 
-### 1. Attach ST2 to a source computation with `timely-adapter`
+### 1. Attach ST2 to a source computation with `st2-timely`
 
 Attach ST2 at `(A)` and `(B)` to any source computation (the example can be found at `st2-timely/examples/minimal.rs`):
 
