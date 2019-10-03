@@ -344,27 +344,32 @@ function App() {
       }
     });
 
-    socket.send(JSON.stringify({ type: 'PAG', epoch: epoch }));
-    socket.send(JSON.stringify({ type: 'AGG', epoch: epoch }));
-    socket.send(JSON.stringify({ type: 'ALL', epoch: epoch }));
-    socket.send(JSON.stringify({ type: 'MET', epoch: epoch }));
-    d3.select(window).on('resize', updatePAG());
-
-    socket.send(JSON.stringify({ type: 'INV' }));
-    setInterval(function () {
+    socket.addEventListener("open", function (e) {
+      socket.send(JSON.stringify({ type: 'PAG', epoch: epoch }));
+      socket.send(JSON.stringify({ type: 'AGG', epoch: epoch }));
+      socket.send(JSON.stringify({ type: 'ALL', epoch: epoch }));
+      socket.send(JSON.stringify({ type: 'MET', epoch: epoch }));
       socket.send(JSON.stringify({ type: 'INV' }));
-    }, 5000);
+      setInterval(function () {
+        socket.send(JSON.stringify({ type: 'INV' }));
+      }, 5000);
+    });
+    d3.select(window).on('resize', updatePAG());
   }, []);
 
   var epochUpdate = function epochUpdate(e) {
     var epoch = parseInt(e.target.value);
     setEpoch(epoch || '');
     if (epoch) {
-      socket.send(JSON.stringify({ type: 'PAG', epoch: epoch }));
-      socket.send(JSON.stringify({ type: 'AGG', epoch: epoch }));
-      socket.send(JSON.stringify({ type: 'ALL', epoch: epoch }));
-      socket.send(JSON.stringify({ type: 'MET', epoch: epoch }));
-      pagState = Object.assign({}, pagState, { epoch: epoch });
+      if (socket.readyState === 1) {
+        socket.send(JSON.stringify({ type: 'PAG', epoch: epoch }));
+        socket.send(JSON.stringify({ type: 'AGG', epoch: epoch }));
+        socket.send(JSON.stringify({ type: 'ALL', epoch: epoch }));
+        socket.send(JSON.stringify({ type: 'MET', epoch: epoch }));
+        pagState = Object.assign({}, pagState, { epoch: epoch });
+      } else {
+        console.err("socket not ready");
+      }
     }
   };
 
@@ -847,7 +852,7 @@ function KHops(_ref6) {
     React.createElement(
       "h1",
       { style: { marginRight: "18px" } },
-      "K-Hops (up to epoch ",
+      "K-Hops (for epoch ",
       epoch,
       ")"
     ),

@@ -336,25 +336,30 @@ function App() {
       }
     });
 
-    socket.send(JSON.stringify({ type: 'PAG', epoch }));
-    socket.send(JSON.stringify({ type: 'AGG', epoch }));
-    socket.send(JSON.stringify({ type: 'ALL', epoch }));
-    socket.send(JSON.stringify({ type: 'MET', epoch }));
+    socket.addEventListener("open", e => {
+      socket.send(JSON.stringify({ type: 'PAG', epoch }));
+      socket.send(JSON.stringify({ type: 'AGG', epoch }));
+      socket.send(JSON.stringify({ type: 'ALL', epoch }));
+      socket.send(JSON.stringify({ type: 'MET', epoch }));
+      socket.send(JSON.stringify({ type: 'INV' }));
+      setInterval(() => { socket.send(JSON.stringify({ type: 'INV' })); }, 5000);
+    });
     d3.select(window).on('resize', updatePAG());
-
-    socket.send(JSON.stringify({ type: 'INV' }));
-    setInterval(() => { socket.send(JSON.stringify({ type: 'INV' })); }, 5000);
   }, []);
 
   const epochUpdate = e => {
     let epoch = parseInt(e.target.value);
     setEpoch(epoch || '');
     if (epoch) {
-      socket.send(JSON.stringify({ type: 'PAG', epoch }));
-      socket.send(JSON.stringify({ type: 'AGG', epoch }));
-      socket.send(JSON.stringify({ type: 'ALL', epoch }));
-      socket.send(JSON.stringify({ type: 'MET', epoch }));
-      pagState = { ...pagState, epoch };
+      if (socket.readyState === 1) {
+        socket.send(JSON.stringify({ type: 'PAG', epoch }));
+        socket.send(JSON.stringify({ type: 'AGG', epoch }));
+        socket.send(JSON.stringify({ type: 'ALL', epoch }));
+        socket.send(JSON.stringify({ type: 'MET', epoch }));
+        pagState = { ...pagState, epoch };
+      } else {
+        console.err("socket not ready");
+      }
     }
   };
 
