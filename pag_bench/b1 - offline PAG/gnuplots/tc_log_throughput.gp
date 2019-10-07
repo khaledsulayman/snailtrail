@@ -20,7 +20,7 @@ set samples 20000
 
 set output "plots/tc_32_log_throughput.pdf"
 
-set title "triangles log event throughput"
+# set title "triangles log event throughput"
 set xlabel "epoch"
 set ylabel "log events / s"
 

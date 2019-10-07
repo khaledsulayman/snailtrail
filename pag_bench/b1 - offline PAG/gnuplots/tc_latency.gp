@@ -16,7 +16,7 @@ set samples 20000
 
 set output "plots/tc_32_latency.pdf"
 
-set title "triangles latency"
+# set title "Triangles latency"
 set xlabel "epoch"
 set ylabel "time [s]"
 

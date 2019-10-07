@@ -26,7 +26,7 @@ set multiplot layout 4,1 rowsfirst
 set xlabel "epoch"
 set ylabel "log events / s"
 
-set title "PAG construction offline log event throughput [150K]"
+set title "Timely PAG throughput [150K]"
 plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_1_5.csv 1 prepped/prepped_tc_32_5.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 1 smooth bezier title "w1", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_2_5.csv 1 prepped/prepped_tc_32_5.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 3 smooth bezier title "w2", \
@@ -36,7 +36,7 @@ plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_32_5.csv 1 prepped/prepped_tc_32_5.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 11 smooth bezier title "w32", \
   "prepped/prepped_tc_32_5.csv" using 1:($3 / $2) with lines ls 13 smooth bezier title "tri32"
 
-set title "PAG construction offline log event throughput [250K]"
+set title "Timely PAG throughput [250K]"
 plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_1_50.csv 1 prepped/prepped_tc_32_50.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 1 smooth bezier title "w1", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_2_50.csv 1 prepped/prepped_tc_32_50.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 3 smooth bezier title "w2", \
@@ -46,7 +46,7 @@ plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_32_50.csv 1 prepped/prepped_tc_32_50.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 11 smooth bezier title "w32", \
   "prepped/prepped_tc_32_50.csv" using 1:($3 / $2) with lines ls 13 smooth bezier title "tri32"
 
-set title "PAG construction offline log event throughput [500K]"
+set title "Timely PAG throughput [500K]"
 plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_1_200.csv 1 prepped/prepped_tc_32_200.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 1 smooth bezier title "w1", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_2_200.csv 1 prepped/prepped_tc_32_200.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 3 smooth bezier title "w2", \
@@ -56,7 +56,7 @@ plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_32_200.csv 1 prepped/prepped_tc_32_200.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 11 smooth bezier title "w32", \
   "prepped/prepped_tc_32_200.csv" using 1:($3 / $2) with lines ls 13 smooth bezier title "tri32"
 
-set title "PAG construction offline log event throughput [1M]"
+set title "Timely PAG throughput [1M]"
 plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_1_500.csv 1 prepped/prepped_tc_32_500.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 1 smooth bezier title "w1", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_2_500.csv 1 prepped/prepped_tc_32_500.csv | xsv fmt -t ' '" using 1:($6 / $2) with lines ls 3 smooth bezier title "w2", \

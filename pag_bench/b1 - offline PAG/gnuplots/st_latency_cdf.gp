@@ -32,7 +32,7 @@ set ylabel "CDF"
 
 input(c) = sprintf('< xsv select 2 %s -d '' '' | sort -n | uniq -c | awk ''BEGIN{sum=0}{print $2,$1,sum; sum=sum+$1}''', c)
 
-set title "PAG construction offline latency [150K]\n{/*0.8 y% of epochs take less than x s}"
+set title "Timely PAG latency CDF [150K]\n{/*0.8 y% of epochs take less than x s}"
 stats input("prepped/prepped_st_1_5.csv") using 3 name "stat1"
 stats input("prepped/prepped_st_2_5.csv") using 3 name "stat2"
 stats input("prepped/prepped_st_4_5.csv") using 3 name "stat4"
@@ -49,7 +49,7 @@ plot \
   input("prepped/prepped_st_32_5.csv") using 1:($3 / stat32_max) with lines ls 11 title "w32", \
   input("prepped/prepped_tc_32_5.csv") using 1:($3 / stattc_max) with lines ls 13 title "tri32"
 
-set title "PAG construction offline latency [250K]\n{/*0.8 y% of epochs take less than x s}"
+set title "Timely PAG latency CDF [250K]\n{/*0.8 y% of epochs take less than x s}"
 stats input("prepped/prepped_st_1_50.csv") using 3 name "stat1"
 stats input("prepped/prepped_st_2_50.csv") using 3 name "stat2"
 stats input("prepped/prepped_st_4_50.csv") using 3 name "stat4"
@@ -66,7 +66,7 @@ plot \
   input("prepped/prepped_st_32_50.csv") using 1:($3 / stat32_max) with lines ls 11 title "w32", \
   input("prepped/prepped_tc_32_50.csv") using 1:($3 / stattc_max) with lines ls 13 title "tri32"
 
-set title "PAG construction offline latency [500K]\n{/*0.8 y% of epochs take less than x s}"
+set title "Timely PAG latency CDF [500K]\n{/*0.8 y% of epochs take less than x s}"
 stats input("prepped/prepped_st_1_200.csv") using 3 name "stat1"
 stats input("prepped/prepped_st_2_200.csv") using 3 name "stat2"
 stats input("prepped/prepped_st_4_200.csv") using 3 name "stat4"
@@ -83,7 +83,7 @@ plot \
   input("prepped/prepped_st_32_200.csv") using 1:($3 / stat32_max) with lines ls 11 title "w32", \
   input("prepped/prepped_tc_32_200.csv") using 1:($3 / stattc_max) with lines ls 13 title "tri32"
 
-set title "PAG construction offline latency [1M]\n{/*0.8 y% of epochs take less than x s}"
+set title "Timely PAG latency CDF [1M]\n{/*0.8 y% of epochs take less than x s}"
 stats input("prepped/prepped_st_1_500.csv") using 3 name "stat1"
 stats input("prepped/prepped_st_2_500.csv") using 3 name "stat2"
 stats input("prepped/prepped_st_4_500.csv") using 3 name "stat4"

@@ -16,13 +16,11 @@ set style line 13 lc rgb "#BC08A7" lt 1 lw 2 pt 2 ps 1 dashtype 3
 
 set logscale y 10
 set format y "10^{%L}"
-# # set yrange [0.0001:10000]
-# set yrange [100000:400000000]
+set yrange [1000:1000000000]
   
 set logscale x 10
 set format x "10^{%L}"
-# # set xrange [10000:1000000000]
-# set xrange [0.01:1]
+set xrange [0.001:100]
 
 set samples 20000 
 
@@ -32,7 +30,7 @@ set multiplot layout 4,1 rowsfirst
 set xlabel "latency [s]"
 set ylabel "throughput [log events / s]"
 
-set title "PAG construction latency vs throughput [150K]"
+set title "Differential PAG throughput vs. latency [150K]"
 plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_1_5.csv 1 prepped/prepped_tc_32_5.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 1 title "w1", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_2_5.csv 1 prepped/prepped_tc_32_5.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 3 title "w2", \
@@ -41,7 +39,7 @@ plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_16_5.csv 1 prepped/prepped_tc_32_5.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 9 title "w16", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_32_5.csv 1 prepped/prepped_tc_32_5.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 11 title "w32"
 
-set title "PAG construction latency vs throughput [250K]"
+set title "Differential PAG throughput vs. latency [250K]"
 plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_1_50.csv 1 prepped/prepped_tc_32_50.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 1 title "w1", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_2_50.csv 1 prepped/prepped_tc_32_50.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 3 title "w2", \
@@ -50,7 +48,7 @@ plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_16_50.csv 1 prepped/prepped_tc_32_50.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 9 title "w16", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_32_50.csv 1 prepped/prepped_tc_32_50.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 11 title "w32"
 
-set title "PAG construction latency vs throughput [500K]"
+set title "Differential PAG throughput vs. latency [500K]"
 plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_1_200.csv 1 prepped/prepped_tc_32_200.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 1 title "w1", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_2_200.csv 1 prepped/prepped_tc_32_200.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 3 title "w2", \
@@ -59,7 +57,7 @@ plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_16_200.csv 1 prepped/prepped_tc_32_200.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 9 title "w16", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_32_200.csv 1 prepped/prepped_tc_32_200.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 11 title "w32"
 
-set title "PAG construction latency vs throughput [1M]"
+set title "Differential PAG throughput vs. latency [1M]"
 plot \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_1_500.csv 1 prepped/prepped_tc_32_500.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 1 title "w1", \
   "< xsv join -n -d ' ' 1 prepped/prepped_st_2_500.csv 1 prepped/prepped_tc_32_500.csv | xsv select 2,6 | xsv fmt -t ' ' | sort -n" using 1:($2/$1) ls 3 title "w2", \

@@ -33,7 +33,7 @@ set ylabel "CDF"
 input(st, tc) = sprintf('< xsv join -n -d '' '' 1 %s 1 %s | xsv select 2,6 | awk -F '','' ''{printf "%.0f\n", ($2 / $1)}'' | sort -n | uniq -c | awk ''BEGIN{sum=0}{print $2,$1,sum; sum=sum+$1}''', st, tc)
 baseline(tc) = sprintf('< xsv select 2,3 %s -d '' '' | awk -F '','' ''{printf "%.0f\n", ($2 / $1)}'' | sort -n | uniq -c | awk ''BEGIN{sum=0}{print $2,$1,sum; sum=sum+$1}''', tc)
 
-set title "PAG construction offline log event throughput [150K]\n{/*0.8 y% of epochs process less than x log events / s}"
+set title "Timely PAG throughput CDF [150K]\n{/*0.8 y% of epochs process less than x log events / s}"
 stats input("prepped/prepped_st_1_5.csv", "prepped/prepped_tc_32_5.csv") using 3 name "stat1"
 stats input("prepped/prepped_st_2_5.csv", "prepped/prepped_tc_32_5.csv") using 3 name "stat2"
 stats input("prepped/prepped_st_4_5.csv", "prepped/prepped_tc_32_5.csv") using 3 name "stat4"
@@ -50,7 +50,7 @@ plot \
   input("prepped/prepped_st_32_5.csv", "prepped/prepped_tc_32_5.csv") using 1:($3 / stat32_max) with lines ls 11 title "w32", \
   baseline("prepped/prepped_tc_32_5.csv") using 1:($3 / stattc_max) with lines ls 13 title "tri32"
 
-set title "PAG construction offline log event throughput [250K]\n{/*0.8 y% of epochs process less than x log events / s}"
+set title "Timely PAG throughput CDF [250K]\n{/*0.8 y% of epochs process less than x log events / s}"
 stats input("prepped/prepped_st_1_50.csv", "prepped/prepped_tc_32_50.csv") using 3 name "stat1"
 stats input("prepped/prepped_st_2_50.csv", "prepped/prepped_tc_32_50.csv") using 3 name "stat2"
 stats input("prepped/prepped_st_4_50.csv", "prepped/prepped_tc_32_50.csv") using 3 name "stat4"
@@ -67,7 +67,7 @@ plot \
   input("prepped/prepped_st_32_50.csv", "prepped/prepped_tc_32_50.csv") using 1:($3 / stat32_max) with lines ls 11 title "w32", \
   baseline("prepped/prepped_tc_32_50.csv") using 1:($3 / stattc_max) with lines ls 13 title "tri32"
 
-set title "PAG construction offline log event throughput [500K]\n{/*0.8 y% of epochs process less than x log events / s}"
+set title "Timely PAG throughput CDF [500K]\n{/*0.8 y% of epochs process less than x log events / s}"
 stats input("prepped/prepped_st_1_200.csv", "prepped/prepped_tc_32_200.csv") using 3 name "stat1"
 stats input("prepped/prepped_st_2_200.csv", "prepped/prepped_tc_32_200.csv") using 3 name "stat2"
 stats input("prepped/prepped_st_4_200.csv", "prepped/prepped_tc_32_200.csv") using 3 name "stat4"
@@ -84,7 +84,7 @@ plot \
   input("prepped/prepped_st_32_200.csv", "prepped/prepped_tc_32_200.csv") using 1:($3 / stat32_max) with lines ls 11 title "w32", \
   baseline("prepped/prepped_tc_32_200.csv") using 1:($3 / stattc_max) with lines ls 13 title "tri32"
 
-set title "PAG construction offline log event throughput [1M]\n{/*0.8 y% of epochs process less than x log events / s}"
+set title "Timely PAG throughput CDF [1M]\n{/*0.8 y% of epochs process less than x log events / s}"
 stats input("prepped/prepped_st_1_500.csv", "prepped/prepped_tc_32_500.csv") using 3 name "stat1"
 stats input("prepped/prepped_st_2_500.csv", "prepped/prepped_tc_32_500.csv") using 3 name "stat2"
 stats input("prepped/prepped_st_4_500.csv", "prepped/prepped_tc_32_500.csv") using 3 name "stat4"

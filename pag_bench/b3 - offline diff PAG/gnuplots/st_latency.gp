@@ -16,7 +16,7 @@ set style line 13 lc rgb "#BC08A7" lt 1 lw 2 pt 2 ps 1 dashtype 3
 
 set logscale y 10
 set format y "10^{%L}"
-# set yrange [0.001:2]
+set yrange [0.001:100]
 
 set samples 20000 
 
@@ -26,7 +26,7 @@ set multiplot layout 4,1 rowsfirst
 set xlabel "epoch"
 set ylabel "t [s]"
 
-set title "PAG construction offline latency [150K]"
+set title "Differential PAG latency [150K]"
 plot \
   "prepped/prepped_st_1_5.csv" using 1:2 with lines ls 1 smooth bezier title "w1", \
   "prepped/prepped_st_2_5.csv" using 1:2 with lines ls 3 smooth bezier title "w2", \
@@ -36,7 +36,7 @@ plot \
   "prepped/prepped_st_32_5.csv" using 1:2 with lines ls 11 smooth bezier title "w32", \
   "prepped/prepped_tc_32_5.csv" using 1:2 with lines ls 13 smooth bezier title "tri32", \
 
-set title "PAG construction offline latency [250K]"
+set title "Differential PAG latency [250K]"
 plot \
   "prepped/prepped_st_1_50.csv" using 1:2 with lines ls 1 smooth bezier title "w1", \
   "prepped/prepped_st_2_50.csv" using 1:2 with lines ls 3 smooth bezier title "w2", \
@@ -46,7 +46,7 @@ plot \
   "prepped/prepped_st_32_50.csv" using 1:2 with lines ls 11 smooth bezier title "w32", \
   "prepped/prepped_tc_32_50.csv" using 1:2 with lines ls 13 smooth bezier title "tri32", \
 
-set title "PAG construction offline latency [500K]"
+set title "Differential PAG latency [500K]"
 plot \
   "prepped/prepped_st_1_200.csv" using 1:2 with lines ls 1 smooth bezier title "w1", \
   "prepped/prepped_st_2_200.csv" using 1:2 with lines ls 3 smooth bezier title "w2", \
@@ -56,7 +56,7 @@ plot \
   "prepped/prepped_st_32_200.csv" using 1:2 with lines ls 11 smooth bezier title "w32", \
   "prepped/prepped_tc_32_200.csv" using 1:2 with lines ls 13 smooth bezier title "tri32", \
 
-set title "PAG construction offline latency [1M]"
+set title "Differential PAG latency [1M]"
 plot \
   "prepped/prepped_st_1_500.csv" using 1:2 with lines ls 1 smooth bezier title "w1", \
   "prepped/prepped_st_2_500.csv" using 1:2 with lines ls 3 smooth bezier title "w2", \

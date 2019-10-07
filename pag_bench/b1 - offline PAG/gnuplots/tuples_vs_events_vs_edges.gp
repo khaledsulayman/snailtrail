@@ -19,7 +19,7 @@ set multiplot layout 4,1 rowsfirst
 set xlabel "epoch"
 set ylabel "count"
 
-set title "tuples vs. log events vs. edges [150K]"
+set title "Tuples vs. log events vs. edges [150K]"
 stats "prepped/prepped_tc_32_5.csv" using 3 name "statevs"
 stats "prepped/prepped_tuples_32_5.csv" using 2 name "stattup"
 stats "prepped/prepped_st_32_5.csv" using 3 name "statedg"
@@ -31,7 +31,7 @@ plot \
   "prepped/prepped_st_32_5.csv" using 1:3 with lines ls 5 smooth bezier title "edges", \
   statedg_mean notitle with lines ls 6
 
-set title "tuples vs. log events vs. edges [250K]"
+set title "Tuples vs. log events vs. edges [250K]"
 stats "prepped/prepped_tc_32_50.csv" using 3 name "statevs"
 stats "prepped/prepped_tuples_32_50.csv" using 2 name "stattup"
 stats "prepped/prepped_st_32_50.csv" using 3 name "statedg"
@@ -43,7 +43,7 @@ plot \
   "prepped/prepped_st_32_50.csv" using 1:3 with lines ls 5 smooth bezier title "edges", \
   statedg_mean notitle with lines ls 6
 
-set title "tuples vs. log events vs. edges [500K]"
+set title "Tuples vs. log events vs. edges [500K]"
 stats "prepped/prepped_tc_32_200.csv" using 3 name "statevs"
 stats "prepped/prepped_tuples_32_200.csv" using 2 name "stattup"
 stats "prepped/prepped_st_32_200.csv" using 3 name "statedg"
@@ -55,7 +55,7 @@ plot \
   "prepped/prepped_st_32_200.csv" using 1:3 with lines ls 5 smooth bezier title "edges", \
   statedg_mean notitle with lines ls 6
 
-set title "tuples vs. log events vs. edges [1M]"
+set title "Tuples vs. log events vs. edges [1M]"
 stats "prepped/prepped_tc_32_500.csv" using 3 name "statevs"
 stats "prepped/prepped_tuples_32_500.csv" using 2 name "stattup"
 stats "prepped/prepped_st_32_500.csv" using 3 name "statedg"

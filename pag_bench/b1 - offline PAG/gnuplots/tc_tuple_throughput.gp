@@ -16,7 +16,7 @@ set samples 20000
 
 set output "plots/tc_32_tuple_throughput.pdf"
 
-set title "triangles tuple throughput"
+# set title "triangles tuple throughput"
 set xlabel "epoch"
 set ylabel "tuples / s"
 
