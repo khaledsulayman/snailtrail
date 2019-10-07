@@ -19,9 +19,6 @@ extern crate abomonation_derive;
 #[macro_use]
 extern crate log;
 
-// Contains algorithms to be run on the PAG
-pub mod algo;
-
 /// Contains the PAG construction
 pub mod pag;
 
@@ -53,7 +50,7 @@ pub enum PagData {
     /// Pag edges
     Pag(PagEdge),
     /// all events (for highlighting)
-    All((u64, u64)),
+    All((u64, u64, u64)),
     /// aggregates (for analysis)
     Agg(KHopSummaryData),
     /// metrics
@@ -70,6 +67,7 @@ pub struct KHopSummaryData {
     wf: u64,
     ac: u64,
     wac: u64,
+    hops: u64,
 }
 
 #[derive(Serialize, Debug)]

@@ -206,6 +206,7 @@ var makeTooltip = function makeTooltip(d) {
 
 var pagState = {};
 var toHighlight = new Set();
+var toHighlightRaw = [];
 
 function setPAGEpoch() {
   if (pag.length < 2) {
@@ -286,6 +287,16 @@ function updatePAG() {
 }
 
 var socket = new WebSocket('ws:127.0.0.1:3012');
+socket.addEventListener("open", function (e) {
+  socket.send(JSON.stringify({ type: 'PAG', epoch: 1 }));
+  socket.send(JSON.stringify({ type: 'AGG', epoch: 1 }));
+  socket.send(JSON.stringify({ type: 'ALL', epoch: 1 }));
+  socket.send(JSON.stringify({ type: 'MET', epoch: 1 }));
+  socket.send(JSON.stringify({ type: 'INV' }));
+  setInterval(function () {
+    socket.send(JSON.stringify({ type: 'INV' }));
+  }, 5000);
+});
 
 function App() {
   var _React$useState = React.useState(1),
@@ -293,20 +304,25 @@ function App() {
       epoch = _React$useState2[0],
       setEpoch = _React$useState2[1];
 
-  var _React$useState3 = React.useState(true),
+  var _React$useState3 = React.useState(1),
       _React$useState4 = _slicedToArray(_React$useState3, 2),
-      highlight = _React$useState4[0],
-      setHighlight = _React$useState4[1];
+      khop = _React$useState4[0],
+      setKhop = _React$useState4[1];
 
   var _React$useState5 = React.useState(true),
       _React$useState6 = _slicedToArray(_React$useState5, 2),
-      showWaiting = _React$useState6[0],
-      setShowWaiting = _React$useState6[1];
+      highlight = _React$useState6[0],
+      setHighlight = _React$useState6[1];
 
-  var _React$useState7 = React.useState(false),
+  var _React$useState7 = React.useState(true),
       _React$useState8 = _slicedToArray(_React$useState7, 2),
-      splitWorker = _React$useState8[0],
-      setSplitWorker = _React$useState8[1];
+      showWaiting = _React$useState8[0],
+      setShowWaiting = _React$useState8[1];
+
+  var _React$useState9 = React.useState(false),
+      _React$useState10 = _slicedToArray(_React$useState9, 2),
+      splitWorker = _React$useState10[0],
+      setSplitWorker = _React$useState10[1];
 
   React.useEffect(function () {
     var svgParent = d3.select("#d3").append("svg").attr("id", "graph");
@@ -334,7 +350,10 @@ function App() {
           payload = _JSON$parse.payload;
 
       if (type === "ALL") {
-        payload.forEach(function (d) {
+        toHighlightRaw = payload;
+        toHighlightRaw.filter(function (x) {
+          return x[2] === khop;
+        }).forEach(function (d) {
           return toHighlight.add("" + d[0] + d[1]);
         });
         updatePAG();
@@ -344,22 +363,25 @@ function App() {
       }
     });
 
-    socket.addEventListener("open", function (e) {
-      socket.send(JSON.stringify({ type: 'PAG', epoch: epoch }));
-      socket.send(JSON.stringify({ type: 'AGG', epoch: epoch }));
-      socket.send(JSON.stringify({ type: 'ALL', epoch: epoch }));
-      socket.send(JSON.stringify({ type: 'MET', epoch: epoch }));
-      socket.send(JSON.stringify({ type: 'INV' }));
-      setInterval(function () {
-        socket.send(JSON.stringify({ type: 'INV' }));
-      }, 5000);
-    });
     d3.select(window).on('resize', updatePAG());
   }, []);
+
+  var khopUpdate = function khopUpdate(e) {
+    var k = parseInt(e.target.value);
+    setKhop(k || '');
+    toHighlight.clear();
+    toHighlightRaw.filter(function (x) {
+      return x[2] === k;
+    }).forEach(function (d) {
+      return toHighlight.add("" + d[0] + d[1]);
+    });
+    updatePAG();
+  };
 
   var epochUpdate = function epochUpdate(e) {
     var epoch = parseInt(e.target.value);
     setEpoch(epoch || '');
+    setKhop(1);
     if (epoch) {
       if (socket.readyState === 1) {
         socket.send(JSON.stringify({ type: 'PAG', epoch: epoch }));
@@ -398,7 +420,15 @@ function App() {
       React.createElement(
         "b",
         { style: { marginRight: "6px" } },
-        "Highlight hops: "
+        "k-hops: "
+      ),
+      React.createElement("input", { id: "khop", type: "text", value: khop, onChange: khopUpdate }),
+      React.createElement(
+        "b",
+        { style: { marginRight: "6px" } },
+        "Highlight ",
+        khop,
+        "-hops: "
       ),
       React.createElement("input", { id: "hop-highlight", type: "checkbox", style: { marginRight: "24px" }, checked: highlight, onChange: highlightUpdate }),
       React.createElement(
@@ -431,7 +461,7 @@ function App() {
     React.createElement(
       "div",
       { style: { display: "flex", flexFlow: "row wrap" } },
-      React.createElement(KHops, { epoch: epoch, showWaiting: showWaiting, splitWorker: splitWorker }),
+      React.createElement(KHops, { hops: khop, epoch: epoch, showWaiting: showWaiting, splitWorker: splitWorker }),
       React.createElement(ActivityMetrics, { epoch: epoch, showWaiting: showWaiting, splitWorker: splitWorker }),
       React.createElement(CrossMetrics, { epoch: epoch, showWaiting: showWaiting, splitWorker: splitWorker }),
       React.createElement(RecordMetrics, { epoch: epoch, showWaiting: showWaiting, splitWorker: splitWorker })
@@ -471,22 +501,22 @@ function RecordMetrics(_ref3) {
       splitWorker = _ref3.splitWorker;
 
   // Plot 1: # records sent by each worker to each worker
-  var _React$useState9 = React.useState(undefined),
-      _React$useState10 = _slicedToArray(_React$useState9, 2),
-      p1 = _React$useState10[0],
-      setP1 = _React$useState10[1];
+  var _React$useState11 = React.useState(undefined),
+      _React$useState12 = _slicedToArray(_React$useState11, 2),
+      p1 = _React$useState12[0],
+      setP1 = _React$useState12[1];
   // Plot 2: # records processed by each worker
 
 
-  var _React$useState11 = React.useState(undefined),
-      _React$useState12 = _slicedToArray(_React$useState11, 2),
-      p2 = _React$useState12[0],
-      setP2 = _React$useState12[1];
-
-  var _React$useState13 = React.useState([]),
+  var _React$useState13 = React.useState(undefined),
       _React$useState14 = _slicedToArray(_React$useState13, 2),
-      metricsData = _React$useState14[0],
-      setMetricsData = _React$useState14[1];
+      p2 = _React$useState14[0],
+      setP2 = _React$useState14[1];
+
+  var _React$useState15 = React.useState([]),
+      _React$useState16 = _slicedToArray(_React$useState15, 2),
+      metricsData = _React$useState16[0],
+      setMetricsData = _React$useState16[1];
 
   var p1Ref = React.useRef(null);
   var p2Ref = React.useRef(null);
@@ -576,24 +606,24 @@ function CrossMetrics(_ref4) {
 
   // Plot 1
   // # data messages between workers
-  var _React$useState15 = React.useState(undefined),
-      _React$useState16 = _slicedToArray(_React$useState15, 2),
-      p1 = _React$useState16[0],
-      setP1 = _React$useState16[1];
+  var _React$useState17 = React.useState(undefined),
+      _React$useState18 = _slicedToArray(_React$useState17, 2),
+      p1 = _React$useState18[0],
+      setP1 = _React$useState18[1];
   // Plot 2
   // t data messages between workers
   // t control messages between workers
 
 
-  var _React$useState17 = React.useState(undefined),
-      _React$useState18 = _slicedToArray(_React$useState17, 2),
-      p2 = _React$useState18[0],
-      setP2 = _React$useState18[1];
-
-  var _React$useState19 = React.useState([]),
+  var _React$useState19 = React.useState(undefined),
       _React$useState20 = _slicedToArray(_React$useState19, 2),
-      metricsData = _React$useState20[0],
-      setMetricsData = _React$useState20[1];
+      p2 = _React$useState20[0],
+      setP2 = _React$useState20[1];
+
+  var _React$useState21 = React.useState([]),
+      _React$useState22 = _slicedToArray(_React$useState21, 2),
+      metricsData = _React$useState22[0],
+      setMetricsData = _React$useState22[1];
 
   var p1Ref = React.useRef(null);
   var p2Ref = React.useRef(null);
@@ -677,20 +707,20 @@ function ActivityMetrics(_ref5) {
       showWaiting = _ref5.showWaiting,
       splitWorker = _ref5.splitWorker;
 
-  var _React$useState21 = React.useState(undefined),
-      _React$useState22 = _slicedToArray(_React$useState21, 2),
-      aC = _React$useState22[0],
-      setAC = _React$useState22[1];
-
   var _React$useState23 = React.useState(undefined),
       _React$useState24 = _slicedToArray(_React$useState23, 2),
-      aD = _React$useState24[0],
-      setAD = _React$useState24[1];
+      aC = _React$useState24[0],
+      setAC = _React$useState24[1];
 
-  var _React$useState25 = React.useState([]),
+  var _React$useState25 = React.useState(undefined),
       _React$useState26 = _slicedToArray(_React$useState25, 2),
-      metricsData = _React$useState26[0],
-      setMetricsData = _React$useState26[1];
+      aD = _React$useState26[0],
+      setAD = _React$useState26[1];
+
+  var _React$useState27 = React.useState([]),
+      _React$useState28 = _slicedToArray(_React$useState27, 2),
+      metricsData = _React$useState28[0],
+      setMetricsData = _React$useState28[1];
 
   var aCRef = React.useRef(null);
   var aDRef = React.useRef(null);
@@ -766,24 +796,25 @@ function ActivityMetrics(_ref5) {
 }
 
 function KHops(_ref6) {
-  var epoch = _ref6.epoch,
+  var hops = _ref6.hops,
+      epoch = _ref6.epoch,
       showWaiting = _ref6.showWaiting,
       splitWorker = _ref6.splitWorker;
 
-  var _React$useState27 = React.useState(undefined),
-      _React$useState28 = _slicedToArray(_React$useState27, 2),
-      vis = _React$useState28[0],
-      setVis = _React$useState28[1];
-
   var _React$useState29 = React.useState(undefined),
       _React$useState30 = _slicedToArray(_React$useState29, 2),
-      wVis = _React$useState30[0],
-      setWVis = _React$useState30[1];
+      vis = _React$useState30[0],
+      setVis = _React$useState30[1];
 
-  var _React$useState31 = React.useState([]),
+  var _React$useState31 = React.useState(undefined),
       _React$useState32 = _slicedToArray(_React$useState31, 2),
-      visData = _React$useState32[0],
-      setVisData = _React$useState32[1];
+      wVis = _React$useState32[0],
+      setWVis = _React$useState32[1];
+
+  var _React$useState33 = React.useState([]),
+      _React$useState34 = _slicedToArray(_React$useState33, 2),
+      visData = _React$useState34[0],
+      setVisData = _React$useState34[1];
 
   var visRef = React.useRef(null);
   var wVisRef = React.useRef(null);
@@ -799,7 +830,7 @@ function KHops(_ref6) {
     } else {
       return filtered.reduce(function (acc, d) {
         var idx = acc.findIndex(function (x) {
-          return x.ca === d.ca;
+          return x.ca === d.a;
         });
         if (idx > -1) {
           acc[idx][sumKey] += d[sumKey];
@@ -809,6 +840,14 @@ function KHops(_ref6) {
         }
       }, []);
     }
+  };
+
+  var groupBy = function groupBy(xs, fn) {
+    return xs.reduce(function (rv, x) {
+      var v = fn(x);
+      (rv[v] = rv[v] || []).push(x);
+      return rv;
+    }, {});
   };
 
   React.useEffect(function () {
@@ -833,16 +872,27 @@ function KHops(_ref6) {
   }, []);
 
   React.useEffect(function () {
+    var d = visData.filter(function (x) {
+      return x.hops <= hops;
+    });
+    d = Object.values(groupBy(d, function (x) {
+      return [x.a, x.wf];
+    })).map(function (xs) {
+      return xs.reduce(function (acc, x) {
+        return Object.assign({}, acc, x, { ac: acc.ac + x.ac, wac: acc.wac + x.wac });
+      });
+    });
+
     if (vis) {
       vis.change('table', vega.changeset().remove(function () {
         return true;
-      }).insert(khopsPrepper(visData, "ac", showWaiting, splitWorker))).run();
+      }).insert(khopsPrepper(d, "ac", showWaiting, splitWorker))).run();
     }
 
     if (wVis) {
       wVis.change('table', vega.changeset().remove(function () {
         return true;
-      }).insert(khopsPrepper(visData, "wac", showWaiting, splitWorker))).run();
+      }).insert(khopsPrepper(d, "wac", showWaiting, splitWorker))).run();
     }
   });
 
@@ -852,7 +902,8 @@ function KHops(_ref6) {
     React.createElement(
       "h1",
       { style: { marginRight: "18px" } },
-      "K-Hops (for epoch ",
+      hops,
+      "-Hops (for epoch ",
       epoch,
       ")"
     ),
@@ -935,35 +986,35 @@ var formatM = function formatM(e) {
 };
 
 function Invariants() {
-  var _React$useState33 = React.useState([]),
-      _React$useState34 = _slicedToArray(_React$useState33, 2),
-      mEpoch = _React$useState34[0],
-      setMEpoch = _React$useState34[1];
-
   var _React$useState35 = React.useState([]),
       _React$useState36 = _slicedToArray(_React$useState35, 2),
-      mOp = _React$useState36[0],
-      setMOp = _React$useState36[1];
+      mEpoch = _React$useState36[0],
+      setMEpoch = _React$useState36[1];
 
   var _React$useState37 = React.useState([]),
       _React$useState38 = _slicedToArray(_React$useState37, 2),
-      mMsg = _React$useState38[0],
-      setMMsg = _React$useState38[1];
+      mOp = _React$useState38[0],
+      setMOp = _React$useState38[1];
 
-  var _React$useState39 = React.useState(null),
+  var _React$useState39 = React.useState([]),
       _React$useState40 = _slicedToArray(_React$useState39, 2),
-      mE = _React$useState40[0],
-      setME = _React$useState40[1];
+      mMsg = _React$useState40[0],
+      setMMsg = _React$useState40[1];
 
   var _React$useState41 = React.useState(null),
       _React$useState42 = _slicedToArray(_React$useState41, 2),
-      mO = _React$useState42[0],
-      setMO = _React$useState42[1];
+      mE = _React$useState42[0],
+      setME = _React$useState42[1];
 
   var _React$useState43 = React.useState(null),
       _React$useState44 = _slicedToArray(_React$useState43, 2),
-      mM = _React$useState44[0],
-      setMM = _React$useState44[1];
+      mO = _React$useState44[0],
+      setMO = _React$useState44[1];
+
+  var _React$useState45 = React.useState(null),
+      _React$useState46 = _slicedToArray(_React$useState45, 2),
+      mM = _React$useState46[0],
+      setMM = _React$useState46[1];
 
   React.useEffect(function () {
     socket.addEventListener("message", function (e) {

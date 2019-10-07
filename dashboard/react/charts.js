@@ -208,6 +208,7 @@ const makeTooltip = d => `
 
 let pagState = {};
 const toHighlight = new Set();
+let toHighlightRaw = [];
 
 function setPAGEpoch() {
   if (pag.length < 2) {
@@ -298,9 +299,18 @@ function updatePAG() {
 }
 
 const socket = new WebSocket('ws:127.0.0.1:3012');
+socket.addEventListener("open", e => {
+  socket.send(JSON.stringify({ type: 'PAG', epoch: 1 }));
+  socket.send(JSON.stringify({ type: 'AGG', epoch: 1 }));
+  socket.send(JSON.stringify({ type: 'ALL', epoch: 1 }));
+  socket.send(JSON.stringify({ type: 'MET', epoch: 1 }));
+  socket.send(JSON.stringify({ type: 'INV' }));
+  setInterval(() => { socket.send(JSON.stringify({ type: 'INV' })); }, 5000);
+});
 
 function App() {
   const [epoch, setEpoch] = React.useState(1);
+  const [khop, setKhop] = React.useState(1);
   const [highlight, setHighlight] = React.useState(true);
   const [showWaiting, setShowWaiting] = React.useState(true);
   const [splitWorker, setSplitWorker] = React.useState(false);
@@ -328,7 +338,10 @@ function App() {
     socket.addEventListener("message", e => {
       const { type, payload } = JSON.parse(e.data);
       if (type === "ALL") {
-        payload.forEach(d => toHighlight.add(`${d[0]}${d[1]}`));
+        toHighlightRaw = payload;
+        toHighlightRaw
+          .filter(x => x[2] === khop)
+          .forEach(d => toHighlight.add(`${d[0]}${d[1]}`));
         updatePAG();
       } else if (type == "PAG") {
         pag = payload;
@@ -336,20 +349,23 @@ function App() {
       }
     });
 
-    socket.addEventListener("open", e => {
-      socket.send(JSON.stringify({ type: 'PAG', epoch }));
-      socket.send(JSON.stringify({ type: 'AGG', epoch }));
-      socket.send(JSON.stringify({ type: 'ALL', epoch }));
-      socket.send(JSON.stringify({ type: 'MET', epoch }));
-      socket.send(JSON.stringify({ type: 'INV' }));
-      setInterval(() => { socket.send(JSON.stringify({ type: 'INV' })); }, 5000);
-    });
     d3.select(window).on('resize', updatePAG());
   }, []);
+
+  const khopUpdate = e => {
+    let k = parseInt(e.target.value);
+    setKhop(k || '');
+    toHighlight.clear();
+    toHighlightRaw
+      .filter(x => x[2] === k)
+      .forEach(d => toHighlight.add(`${d[0]}${d[1]}`));
+    updatePAG();
+  };
 
   const epochUpdate = e => {
     let epoch = parseInt(e.target.value);
     setEpoch(epoch || '');
+    setKhop(1);
     if (epoch) {
       if (socket.readyState === 1) {
         socket.send(JSON.stringify({ type: 'PAG', epoch }));
@@ -374,7 +390,9 @@ function App() {
       <h1>PAG Viz</h1>
       <div id="d3"></div>
       <div className="viz-settings">
-        <b style={{ marginRight: "6px" }}>Highlight hops: </b>
+        <b style={{ marginRight: "6px" }}>k-hops: </b>
+        <input id="khop" type="text" value={khop} onChange={khopUpdate}></input>
+        <b style={{ marginRight: "6px" }}>Highlight {khop}-hops: </b>
         <input id="hop-highlight" type="checkbox" style={{ marginRight: "24px" }} checked={highlight} onChange={highlightUpdate}></input>
         <b style={{ marginRight: "6px" }}>Epoch: </b>
         <input id="epoch" type="text" value={epoch} onChange={epochUpdate}></input>
@@ -386,7 +404,7 @@ function App() {
         <input type="checkbox" checked={splitWorker} onChange={e => setSplitWorker(e.target.checked)}></input>
       </div>
       <div style={{ display: "flex", flexFlow: "row wrap" }}>
-        <KHops epoch={epoch} showWaiting={showWaiting} splitWorker={splitWorker}></KHops>
+        <KHops hops={khop} epoch={epoch} showWaiting={showWaiting} splitWorker={splitWorker}></KHops>
         <ActivityMetrics epoch={epoch} showWaiting={showWaiting} splitWorker={splitWorker}></ActivityMetrics>
         <CrossMetrics epoch={epoch} showWaiting={showWaiting} splitWorker={splitWorker}></CrossMetrics>
         <RecordMetrics epoch={epoch} showWaiting={showWaiting} splitWorker={splitWorker}></RecordMetrics>
@@ -568,7 +586,7 @@ function ActivityMetrics({ epoch, showWaiting, splitWorker }) {
   );
 }
 
-function KHops({ epoch, showWaiting, splitWorker }) {
+function KHops({ hops, epoch, showWaiting, splitWorker }) {
   const [vis, setVis] = React.useState(undefined);
   const [wVis, setWVis] = React.useState(undefined);
   const [visData, setVisData] = React.useState([]);
@@ -583,7 +601,7 @@ function KHops({ epoch, showWaiting, splitWorker }) {
       return filtered;
     } else {
       return filtered.reduce((acc, d) => {
-        let idx = acc.findIndex(x => x.ca === d.ca);
+        let idx = acc.findIndex(x => x.ca === d.a);
         if (idx > -1) {
           acc[idx][sumKey] += d[sumKey];
           return acc;
@@ -592,6 +610,14 @@ function KHops({ epoch, showWaiting, splitWorker }) {
         }
       }, []);
     }
+  };
+
+  const groupBy = function(xs, fn) {
+    return xs.reduce(function(rv, x) {
+      const v = fn(x);
+      (rv[v] = rv[v] || []).push(x);
+      return rv;
+    }, {});
   };
 
   React.useEffect(() => {
@@ -605,18 +631,25 @@ function KHops({ epoch, showWaiting, splitWorker }) {
   }, []);
 
   React.useEffect(() => {
+    let d = visData.filter(x => x.hops <= hops);
+    d = Object
+      .values(groupBy(d, x => [x.a, x.wf]))
+      .map(xs => xs.reduce((acc, x) => {
+        return { ...acc, ...x, ac: acc.ac + x.ac, wac: acc.wac + x.wac };
+      }));
+
     if (vis) {
-      vis.change('table', vega.changeset().remove(() => true).insert(khopsPrepper(visData, "ac", showWaiting, splitWorker))).run();
+      vis.change('table', vega.changeset().remove(() => true).insert(khopsPrepper(d, "ac", showWaiting, splitWorker))).run();
     }
 
     if (wVis) {
-      wVis.change('table', vega.changeset().remove(() => true).insert(khopsPrepper(visData, "wac", showWaiting, splitWorker))).run();
+      wVis.change('table', vega.changeset().remove(() => true).insert(khopsPrepper(d, "wac", showWaiting, splitWorker))).run();
     }
   });
 
   return (
     <div>
-      <h1 style={{ marginRight: "18px" }}>K-Hops (for epoch {epoch})</h1>
+      <h1 style={{ marginRight: "18px" }}>{hops}-Hops (for epoch {epoch})</h1>
       <div style={{ display: "flex", flexFlow: "row wrap" }}>
         <div>
           <h2>Unweighted</h2>

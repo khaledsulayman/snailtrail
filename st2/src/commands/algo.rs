@@ -58,12 +58,12 @@ pub fn run(
 pub trait KHopsSummary<S: Scope<Timestamp = Pair<u64, Duration>>> {
     /// Summarize khops edges weighted and unweighted for each epoch
     /// by activity type and worker_id.
-    fn khops_summary(&self) -> Stream<S, ((ActivityType, u64), (u64, u64))>;
+    fn khops_summary(&self) -> Stream<S, ((ActivityType, u64, u64), (u64, u64))>;
 }
 
-impl<S: Scope<Timestamp = Pair<u64, Duration>>> KHopsSummary<S> for Stream<S, (PagEdge, u64)>{
-    fn khops_summary(&self) -> Stream<S, ((ActivityType, u64), (u64, u64))> {
-        self.map(|(edge, weight)| ((edge.edge_type, edge.source.worker_id), (edge, weight)))
+impl<S: Scope<Timestamp = Pair<u64, Duration>>> KHopsSummary<S> for Stream<S, ((PagEdge, u64), u64)>{
+    fn khops_summary(&self) -> Stream<S, ((ActivityType, u64, u64), (u64, u64))> {
+        self.map(|((edge, weight), hops)| ((edge.edge_type, edge.source.worker_id, hops), (edge, weight)))
             .aggregate::<_,(u64, u64),_,_,_>(
                 |_key, (_edge, weight), acc| {
                     *acc = (acc.0 + 1, acc.1 + weight);
@@ -83,13 +83,14 @@ fn calculate_hash<T: Hash>(t: &T) -> u64 {
 pub trait KHops<S: Scope<Timestamp = Pair<u64, Duration>>> {
     /// Run khops algorithm on provided `Stream`.
     /// Currently, this is hardcoded to a 2-hop pattern.
-    /// Returns a stream of reachable edges and the steps necessary to reach them.
-    fn khops(&self) -> Stream<S, (PagEdge, u64)>;
+    /// Returns a stream of reachable edges and the steps necessary to reach them
+    /// for each hop depth
+    fn khops(&self) -> Stream<S, ((PagEdge, u64), u64)>;
 }
 
 
 impl<S: Scope<Timestamp = Pair<u64, Duration>>> KHops<S> for Stream<S, (PagEdge, S::Timestamp, isize)>{
-    fn khops(&self) -> Stream<S, (PagEdge, u64)> {
+    fn khops(&self) -> Stream<S, ((PagEdge, u64), u64)> {
         let epochized = self
             .map(|(x, _, _)| (x.destination.timestamp, (x, 0 as u64)))
             .delay_batch(|time| Pair::new(time.first + 1, Default::default()));
@@ -126,10 +127,27 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> KHops<S> for Stream<S, (PagEdge,
         let step_1 = step_1_no_waiting.concat(&step_1_processing);
 
         let step_2 = step_1.hop(&epochized);
+        let step_3 = step_2.hop(&epochized);
+        let step_4 = step_3.hop(&epochized);
+        let step_5 = step_4.hop(&epochized);
+        let step_6 = step_5.hop(&epochized);
+        let step_7 = step_6.hop(&epochized);
+        let step_8 = step_7.hop(&epochized);
+        let step_9 = step_8.hop(&epochized);
+        let step_10 = step_9.hop(&epochized);
 
         // @TODO: Optionally, only weigh from the second hop onwards
         // step_1.map(|(a, (x, _))| (a, (x, 0))).concat(&step_2).map(|(_, x)| x)
-        step_1.concat(&step_2).map(|(_, x)| x)
+        step_1.map(|(_, x)| (x, 1))
+            .concat(&step_2.map(|(_, x)| (x, 2)))
+            .concat(&step_3.map(|(_, x)| (x, 3)))
+            .concat(&step_4.map(|(_, x)| (x, 4)))
+            .concat(&step_5.map(|(_, x)| (x, 5)))
+            .concat(&step_6.map(|(_, x)| (x, 6)))
+            .concat(&step_7.map(|(_, x)| (x, 7)))
+            .concat(&step_8.map(|(_, x)| (x, 8)))
+            .concat(&step_9.map(|(_, x)| (x, 9)))
+            .concat(&step_10.map(|(_, x)| (x, 10)))
     }
 }
 
