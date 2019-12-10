@@ -6,7 +6,7 @@
 
 SnailTrail 2 (ST2 for short) is a fork of [SnailTrail](https://github.com/strymon-system/snailtrail), a tool to run online critical path analysis on various stream processors (see also the [SnailTrail NSDI'18 Paper](https://doi.org/10.3929/ethz-b-000228581)).
   
-For in-depth information on its implementation, check out my [thesis](https://github.com/li1/snailtrail/raw/master/docs/thesis.png).
+For in-depth information on its implementation, check out my [thesis](https://github.com/li1/snailtrail/raw/master/docs/thesis.pdf).
 
 The fork builds upon the original repository and implements further algorithms for analyzing stream processors. It currently focuses on the 0.10 version of [Timely Dataflow and Differential Dataflow](https://github.com/timelydataflow) and won't refrain from breaking existing upstream abstractions (even though they should be relatively easy to add back in at a later point in time).
 
@@ -111,7 +111,7 @@ The "magic" mostly happens at
 ### Overview
 
 <p align="center">
-  <img src="https://github.com/li1/snailtrail/raw/master/docs/architecture.png" width="500">
+  <img src="https://github.com/li1/snailtrail/raw/master/docs/architecture.png" width="700">
 </p>
 
 #### In this repository
