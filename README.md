@@ -157,6 +157,7 @@ See the `docs` subfolder for some additional documentation. Of course, also chec
 
 ## Resources
 
+* [Malte Sandstede: **Online Analysis of Distributed Dataflows** (TUM '19)](https://github.com/li1/talks/raw/master/st2.pdf)
 * [Hoffmann et al.: **SnailTrail Paper** (NSDI '18)](https://doi.org/10.3929/ethz-b-000228581)
 * [Malte Sandstede: **A Short Introduction to SnailTrail** (ETH '19)](https://github.com/li1/talks/raw/master/snailtrail.pdf)
 * [Vasia Kalavri: **Towards self-managed, re-configurable streaming dataflow systems** (UGENT '19)](https://www.youtube.com/watch?v=E947ynd_vGI)
