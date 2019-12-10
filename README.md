@@ -8,6 +8,8 @@ SnailTrail 2 (ST2 for short) is a fork of [SnailTrail](https://github.com/strymo
   
 For in-depth information on its implementation, check out my [thesis](https://github.com/li1/snailtrail/raw/master/docs/thesis.pdf).
 
+If you're looking for a light-weight alternative for analyzing only Timely & Differential Dataflows, check out [st2 lite](https://github.com/li1/st2-lite).
+
 The fork builds upon the original repository and implements further algorithms for analyzing stream processors. It currently focuses on the 0.10 version of [Timely Dataflow and Differential Dataflow](https://github.com/timelydataflow) and won't refrain from breaking existing upstream abstractions (even though they should be relatively easy to add back in at a later point in time).
 
 ## Naming conventions
