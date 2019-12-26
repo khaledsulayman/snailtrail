@@ -6,7 +6,7 @@
 
 SnailTrail 2 (ST2 for short) is a fork of [SnailTrail](https://github.com/strymon-system/snailtrail), a tool to run online critical path analysis on various stream processors (see also the [SnailTrail NSDI'18 Paper](https://doi.org/10.3929/ethz-b-000228581)).
   
-For in-depth information on its implementation, check out my [thesis](https://github.com/li1/snailtrail/raw/master/docs/thesis.pdf).
+For in-depth information on its implementation, check out my [thesis](http://arxiv.org/abs/1912.09747).
 
 If you're looking for a light-weight alternative for analyzing only Timely & Differential Dataflows, check out [st2 lite](https://github.com/li1/st2-lite).
 
