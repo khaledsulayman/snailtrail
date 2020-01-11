@@ -26,8 +26,8 @@ use timely::{
 
 use TimelyEvent::{Messages, Operates, Channels, Progress, Schedule, Text};
 
-use differential_dataflow::logging::DifferentialEvent;
-use DifferentialEvent::Merge;
+// use differential_dataflow::logging::DifferentialEvent;
+// use DifferentialEvent::Merge;
 
 use st2_logformat::pair::Pair;
 
@@ -47,8 +47,8 @@ pub type ReplayWriter<T, R> = EventWriter<T, CompEvent, R>;
 pub enum DataflowEvents <'a> {
     /// A `TimelyEvent` batch
     Timely(&'a mut Vec<(Duration, usize, TimelyEvent)>),
-    /// A `DifferentialEvent` batch
-    Differential(&'a mut Vec<(Duration, usize, DifferentialEvent)>)
+    // A `DifferentialEvent` batch
+    // Differential(&'a mut Vec<(Duration, usize, DifferentialEvent)>)
 }
 
 /// Types of Write a PAGLogger can attach to
@@ -259,23 +259,23 @@ impl PAGLogger {
     /// Publishes a batch of logged events and advances the capability.
     pub fn publish_batch(&mut self, data: DataflowEvents) {
         match data {
-            DataflowEvents::Differential(data) => {
-                for (_t, _wid, x) in data.drain(..) {
-                    match &x {
-                        Merge(e) if e.complete.is_some() => {
-                            let op_addr = self.op_id_to_op_addr.get(&e.operator).expect("op id in addr not found");
-                            // we need `ch_source` here, since we're not interested in the operator id
-                            // provided by the `Batch` event, but where the batch event's records flow to
-                            // (e.g., a join operator).
-                            let ch_id = self.op_addr_to_ch_source.get(&op_addr).expect("op addr in chs not found");
+            // DataflowEvents::Differential(data) => {
+            //     for (_t, _wid, x) in data.drain(..) {
+            //         match &x {
+            //             Merge(e) if e.complete.is_some() => {
+            //                 let op_addr = self.op_id_to_op_addr.get(&e.operator).expect("op id in addr not found");
+            //                 // we need `ch_source` here, since we're not interested in the operator id
+            //                 // provided by the `Batch` event, but where the batch event's records flow to
+            //                 // (e.g., a join operator).
+            //                 let ch_id = self.op_addr_to_ch_source.get(&op_addr).expect("op addr in chs not found");
 
-                            let counter = self.channel_records.entry(*ch_id).or_insert(0);
-                            *counter += e.complete.unwrap();
-                        }
-                        _ => {}
-                    }
-                }
-            }
+            //                 let counter = self.channel_records.entry(*ch_id).or_insert(0);
+            //                 *counter += e.complete.unwrap();
+            //             }
+            //             _ => {}
+            //         }
+            //     }
+            // }
             DataflowEvents::Timely(data) => {
                 for (t, wid, x) in data.drain(..) {
                     self.overall_messages += 1;
