@@ -38,7 +38,11 @@ pub struct PagNode {
     pub epoch: u64,
     /// seq_no of PagNode
     pub seq_no: u64,
-}
+    /// is this node the start of an epoch
+    pub start: bool,
+    /// is this node the end of an epoch
+    pub end: bool
+ }
 
 impl Ord for PagNode {
     fn cmp(&self, other: &PagNode) -> Ordering {
@@ -59,6 +63,8 @@ impl<'a> From<&'a LogRecord> for PagNode {
             worker_id: record.local_worker,
             epoch: record.epoch,
             seq_no: record.seq_no,
+            start: record.start,
+            end: record.end,
         }
     }
 }
@@ -69,7 +75,9 @@ impl Default for PagNode {
             timestamp: Default::default(),
             worker_id: Default::default(),
             epoch: Default::default(),
-            seq_no: Default::default()
+            seq_no: Default::default(),
+            start: false,
+            end: false,
         }
     }
 }
@@ -77,7 +85,7 @@ impl Default for PagNode {
 impl std::fmt::Debug for PagNode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         // write!(f, "{}|{:?}@w{} (s{})", self.epoch, self.timestamp, self.worker_id, self.seq_no)
-        write!(f, "{},{},{},{}", self.epoch, self.timestamp.as_nanos(), self.worker_id, self.seq_no)
+        write!(f, "{},{},{},{},{},{}", self.epoch, self.timestamp.as_nanos(), self.worker_id, self.seq_no, self.start, self.end)
     }
 }
 
@@ -209,7 +217,7 @@ pub trait ConstructPAG<S: Scope<Timestamp = Pair<u64, Duration>>> {
     /// Takes `LogRecord`s and connects local edges (per epoch, per worker)
     fn make_local_edges(&self, index: usize) -> Stream<S, (PagEdge, S::Timestamp, isize)>;
     /// Helper to create a `PagEdge` from two `LogRecord`s
-    fn build_local_edge(prev: &LogRecord, record: &LogRecord, next: &LogRecord) -> PagEdge;
+    fn build_local_edge(prev: &LogRecord, record: &LogRecord, next: Option<&LogRecord>) -> PagEdge;
     /// Takes `LogRecord`s and connects remote edges (per epoch, across workers)
     fn make_remote_edges(&self) -> Stream<S, (PagEdge, S::Timestamp, isize)>;
 }
@@ -232,31 +240,45 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructPAG<S> for Stream<S, Lo
         self.unary_frontier(Pipeline, "Local Edges", move |_, _| { move |input, output| {
             input.for_each(|cap, data| {
                 data.swap(&mut vector);
-                for lr in vector.drain(..) {
-                    let local_worker = lr.local_worker as usize;
 
-                    if let Some(prev_lr) = prev_buffer.remove(&local_worker) {
-                        if let Some(prev2_lr) = prev2_buffer.remove(&local_worker) {
-                            // we've seen two lrs from this local_worker before
+                let mut v = vector.drain(..).peekable();
+                loop {
+                    if let Some(lr) = v.next() {
+                        let local_worker = lr.local_worker as usize;
 
-                            assert!(prev_lr.epoch >= prev2_lr.epoch);
-                            assert!(prev_lr.timestamp >= prev2_lr.timestamp);
-                            assert!(lr.epoch >= prev_lr.epoch, format!("w{}: {:?} should happen before {:?}", index, prev_lr.epoch, lr.epoch));
-                            assert!(lr.timestamp >= prev_lr.timestamp, format!("w{}: {:?} should happen before {:?}", index, prev_lr, lr));
+                        if let Some(prev_lr) = prev_buffer.remove(&local_worker) {
+                            if let Some(prev2_lr) = prev2_buffer.remove(&local_worker) {
+                                // we've seen two lrs from this local_worker before
 
-                            // only join lrs within an epoch
-                            if prev2_lr.epoch == prev_lr.epoch && prev_lr.epoch == lr.epoch  {
-                                // builds the edge between prev2_lr and prev_lr
-                                output.session(&cap).give((Self::build_local_edge(&prev2_lr, &prev_lr, &lr), cap.time().clone(), 1));
+                                assert!(prev_lr.epoch >= prev2_lr.epoch);
+                                assert!(prev_lr.timestamp >= prev2_lr.timestamp);
+                                assert!(lr.epoch >= prev_lr.epoch, format!("w{}: {:?} should happen before {:?}", index, prev_lr.epoch, lr.epoch));
+                                assert!(lr.timestamp >= prev_lr.timestamp, format!("w{}: {:?} should happen before {:?}", index, prev_lr, lr));
+
+                                // only join lrs within an epoch
+                                if prev2_lr.epoch == prev_lr.epoch && prev_lr.epoch == lr.epoch  {
+                                    // builds the edge between prev2_lr and prev_lr
+                                    output.session(&cap).give((Self::build_local_edge(&prev2_lr, &prev_lr, Some(&lr)), cap.time().clone(), 1));
+                                }
                             }
+
+                            // move prev_lr -> prev2_lr
+                            prev2_buffer.insert(local_worker, prev_lr);
                         }
 
-                        // move prev_lr -> prev2_lr
-                        prev2_buffer.insert(local_worker, prev_lr);
-                    }
+                        // move lr -> prev_lr
+                        prev_buffer.insert(local_worker, lr);
 
-                    // move lr -> prev_lr
-                    prev_buffer.insert(local_worker, lr);
+                        if v.peek().is_none() {
+                            if let Some(prev_lr) = prev_buffer.remove(&local_worker) {
+                                if let Some(prev2_lr) = prev2_buffer.remove(&local_worker) {
+                                    output.session(&cap).give((Self::build_local_edge(&prev2_lr, &prev_lr, None), cap.time().clone(), 1));
+                                }
+                            }
+                        }
+                    } else {
+                        break;
+                    }
                 }
             });
 
@@ -264,7 +286,7 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructPAG<S> for Stream<S, Lo
         }})
     }
 
-    fn build_local_edge(prev: &LogRecord, record: &LogRecord, next: &LogRecord) -> PagEdge {
+    fn build_local_edge(prev: &LogRecord, record: &LogRecord, next: Option<&LogRecord>) -> PagEdge {
         // Rules for a well-formatted PAG
 
         // @TODO: In some cases, this assertion doesn't hold and a DataMessage is sent before the
@@ -311,7 +333,7 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructPAG<S> for Stream<S, Lo
         };
 
         // waiting on data message
-        if record.activity_type == Scheduling && next.activity_type == DataMessage && edge_type == Busy {
+        if record.activity_type == Scheduling && next.is_some() && next.unwrap().activity_type == DataMessage && edge_type == Busy {
             edge_type = Waiting;
         }
 

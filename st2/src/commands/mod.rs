@@ -8,6 +8,8 @@ pub mod metrics;
 pub mod inspect;
 /// ST2 graph algorithms
 pub mod algo;
+/// ST2 Cp Metric
+pub mod cp;
 /// Invariants checker
 pub mod invariants;
 /// Online dashboard

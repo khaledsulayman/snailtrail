@@ -85,6 +85,16 @@ fn run() -> Result<(), STError> {
                 .about("run ST2 inspector")
         )
         .subcommand(
+            clap::SubCommand::with_name("cp")
+                .about("run ST2 CP Metric")
+                .arg(clap::Arg::with_name("with_waiting")
+                     .short("w")
+                     .long("with-waiting")
+                     .value_name("BOOL")
+                     .help("Set to true to include waiting activities during CP metric calculation.")
+                     .default_value("false"))
+        )
+        .subcommand(
             clap::SubCommand::with_name("algo")
                 .about("run ST2 graph algorithms")
         )
@@ -160,6 +170,15 @@ fn run() -> Result<(), STError> {
             println!("Connected!");
 
             st2::commands::inspect::run(timely_configuration, replay_source)
+        }
+        ("cp", Some(cp_args)) => {
+            let with_waiting: bool = std::str::FromStr::from_str(cp_args.value_of("with_waiting").expect("error parsing with waiting arg"))
+                .expect("error converting waiting arg to bool");
+
+            let replay_source = make_replay_source(&args)?;
+            println!("Connected!");
+
+            st2::commands::cp::run(timely_configuration, replay_source, with_waiting)
         }
         ("algo", Some(_algo_args)) => {
             let replay_source = make_replay_source(&args)?;

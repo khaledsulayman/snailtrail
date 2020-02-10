@@ -101,6 +101,10 @@ pub struct LogRecord {
     pub correlator_id: Option<u64>,
     /// Number of records to detect skew
     pub length: Option<usize>,
+    /// starting log record
+    pub start: bool,
+    /// ending log record
+    pub end: bool,
 }
 
 impl Ord for LogRecord {

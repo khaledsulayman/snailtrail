@@ -15,6 +15,7 @@ use st2_logformat::pair::Pair;
 
 use std::io::Read;
 use std::time::Duration;
+use std::collections::HashMap;
 
 use timely::{
     dataflow::{
@@ -55,7 +56,7 @@ pub trait ConstructLRs<S: Scope<Timestamp = Pair<u64, Duration>>> {
     /// Makes a stream of log records from an event stream.
     fn make_lrs(&self, index: usize) -> Stream<S, LogRecord>;
     /// Builds a log record at differential time `time` from the supplied computation event.
-    fn build_lr(comp_event: CompEvent) -> Option<LogRecord>;
+    fn build_lr(comp_event: CompEvent, start: bool, end: bool) -> Option<LogRecord>;
 }
 
 impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructLRs<S> for Stream<S, CompEvent>
@@ -108,17 +109,61 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructLRs<S> for Stream<S, Co
     }
 
     fn make_lrs(&self, _index: usize) -> Stream<S, LogRecord> {
+        let mut curr_epoch = HashMap::new();
+        let mut at_first = HashMap::new();
         let mut vector = Vec::new();
+        let mut at_last = false;
 
         self.unary(Pipeline, "LogRecordConstruct", move |_, _| { move |input, output| {
             input.for_each(|cap, data| {
                 data.swap(&mut vector);
-                output.session(&cap).give_iterator(vector.drain(..).flat_map(|x| Self::build_lr(x).into_iter()));
+
+                let mut vec_iter = vector.drain(..).peekable();
+                loop {
+                    if let Some(x) = vec_iter.next() {
+                        let wid = (x.3).1;
+
+                        let ep = curr_epoch.entry(wid as usize).or_insert(0);
+                        if x.0 > *ep {
+                            *ep = x.0;
+                            at_first.insert(wid, true);
+                        } else {
+                            let next = vec_iter.peek();
+                            if let Some(n) = next {
+                                // assert!((n.3).1 == wid);
+
+                                if ((n.3).1 == wid) && x.0 < n.0 {
+                                    at_last = true;
+                                }
+                            } else {
+                                at_last = true;
+                            }
+                        }
+
+                        let at_f = at_first.entry(wid as usize).or_insert(true);
+
+                        let lr = if *at_f {
+                            *at_f = false;
+                            Self::build_lr(x, true, false).into_iter()
+                        } else {
+                            if at_last {
+                                at_last = false;
+                                Self::build_lr(x, false, true).into_iter()
+                            } else {
+                                Self::build_lr(x, false, false).into_iter()
+                            }
+                        };
+
+                        output.session(&cap).give_iterator(lr);
+                    } else {
+                        break
+                    }
+                };
             });
         }})
     }
 
-    fn build_lr(comp_event: CompEvent) -> Option<LogRecord> {
+    fn build_lr(comp_event: CompEvent, start: bool, end: bool) -> Option<LogRecord> {
         let (epoch, seq_no, length, (timestamp, wid, x)) = comp_event;
         let local_worker = wid as u64;
 
@@ -143,6 +188,8 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructLRs<S> for Stream<S, Co
                     channel_id: None,
                     correlator_id: None,
                     length,
+                    start,
+                    end
                 })
             }
             // remote data messages
@@ -172,7 +219,9 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructLRs<S> for Stream<S, Co
                     operator_id: None,
                     channel_id: Some(event.channel as u64),
                     correlator_id: Some(event.seq_no as u64),
-                    length
+                    length,
+                    start,
+                    end
                 })
             }
             // Control Messages
@@ -203,6 +252,8 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructLRs<S> for Stream<S, Co
                     channel_id: Some(event.channel as u64),
                     correlator_id: Some(event.seq_no as u64),
                     length: None,
+                    start,
+                    end,
                 })
             }
             // Channels / Operates events
