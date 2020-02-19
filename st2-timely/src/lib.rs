@@ -56,7 +56,7 @@ pub trait ConstructLRs<S: Scope<Timestamp = Pair<u64, Duration>>> {
     /// Makes a stream of log records from an event stream.
     fn make_lrs(&self, index: usize) -> Stream<S, LogRecord>;
     /// Builds a log record at differential time `time` from the supplied computation event.
-    fn build_lr(comp_event: CompEvent, start: bool, end: bool) -> Option<LogRecord>;
+    fn build_lr(comp_event: CompEvent, prev_ts: Option<Duration>, start: bool, end: bool) -> Option<LogRecord>;
 }
 
 impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructLRs<S> for Stream<S, CompEvent>
@@ -142,19 +142,44 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructLRs<S> for Stream<S, Co
 
                         let at_f = at_first.entry(wid as usize).or_insert(true);
 
+                        // Might need to reorder data message receivals
+                        // TODO this enforces -w == -s
+                        if let Some(next) = vec_iter.peek() {
+                            if let Messages(event) = &(next.3).2 {
+                                if !event.is_send {
+                                    let lr = if *at_f {
+                                        *at_f = false;
+                                        Self::build_lr(next.clone(), Some((x.3).0), true, false).into_iter()
+                                    } else {
+                                        if at_last {
+                                            at_last = false;
+                                            Self::build_lr(next.clone(), Some((x.3).0), false, true).into_iter()
+                                        } else {
+                                            Self::build_lr(next.clone(), Some((x.3).0), false, false).into_iter()
+                                        }
+                                    };
+
+                                    output.session(&cap).give_iterator(lr);
+
+                                    // Skip next - we've already built it
+                                    vec_iter.next();
+                                }
+                            }
+                        }
+
                         let lr = if *at_f {
                             *at_f = false;
-                            Self::build_lr(x, true, false).into_iter()
+                            Self::build_lr(x, None, true, false).into_iter()
                         } else {
                             if at_last {
                                 at_last = false;
-                                Self::build_lr(x, false, true).into_iter()
+                                Self::build_lr(x, None, false, true).into_iter()
                             } else {
-                                Self::build_lr(x, false, false).into_iter()
+                                Self::build_lr(x, None, false, false).into_iter()
                             }
                         };
-
                         output.session(&cap).give_iterator(lr);
+
                     } else {
                         break
                     }
@@ -163,7 +188,7 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructLRs<S> for Stream<S, Co
         }})
     }
 
-    fn build_lr(comp_event: CompEvent, start: bool, end: bool) -> Option<LogRecord> {
+    fn build_lr(comp_event: CompEvent, prev_ts: Option<Duration>, start: bool, end: bool) -> Option<LogRecord> {
         let (epoch, seq_no, length, (timestamp, wid, x)) = comp_event;
         let local_worker = wid as u64;
 
@@ -206,6 +231,17 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructLRs<S> for Stream<S, Co
                     EventType::Sent
                 } else {
                     EventType::Received
+                };
+
+
+                let timestamp = if event.is_send {
+                        timestamp
+                } else {
+                    if let Some(ts) = prev_ts {
+                        ts
+                    } else {
+                        timestamp
+                    }
                 };
 
                 Some(LogRecord {

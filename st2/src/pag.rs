@@ -297,7 +297,7 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructPAG<S> for Stream<S, Lo
         // No data messages outside a Schedules event
         // assert!((record.event_type != Start) || prev.activity_type != DataMessage, format!("{:?}, {:?}", prev, record));
 
-        assert!((prev.event_type != End) || record.activity_type != DataMessage);
+        // assert!((prev.event_type != End) || record.activity_type != DataMessage);
 
         // No control messages within a Schedules event
         assert!((record.event_type != End) || prev.activity_type != ControlMessage);
@@ -306,7 +306,8 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructPAG<S> for Stream<S, Lo
         assert!(record.length.is_none() || record.activity_type == DataMessage || record.event_type == End);
         assert!(prev.length.is_none() || prev.activity_type == DataMessage || prev.event_type == End);
         // local edges are local and provided in order
-        assert!(record.timestamp > prev.timestamp && record.local_worker == prev.local_worker);
+        assert!(record.timestamp >= prev.timestamp);
+        assert!(record.local_worker == prev.local_worker);
 
         let processing_or_spinning = if record.length.is_some() {
             Processing
@@ -332,10 +333,10 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> ConstructPAG<S> for Stream<S, Lo
             _ => panic!("{:?}, {:?}", prev, record)
         };
 
-        // waiting on data message
-        if record.activity_type == Scheduling && next.is_some() && next.unwrap().activity_type == DataMessage && edge_type == Busy {
-            edge_type = Waiting;
-        }
+        // // waiting on data message
+        // if record.activity_type == Scheduling && next.is_some() && next.unwrap().activity_type == DataMessage && edge_type == Busy {
+        //     edge_type = Waiting;
+        // }
 
         let operator_id = if prev.event_type != End && record.event_type != Start {
             prev.operator_id

@@ -36,7 +36,10 @@ use crate::STError;
 pub fn run(
     timely_configuration: timely::Configuration,
     replay_source: ReplaySource,
-    with_waiting: bool) -> Result<(), STError> {
+    with_waiting: bool,
+    epoch: Option<u64>) -> Result<(), STError> {
+
+    println!("running cp metric with_waiting: {:?}", with_waiting);
 
     timely::execute(timely_configuration, move |worker| {
         let index = worker.index();
@@ -48,14 +51,25 @@ pub fn run(
             let pag: Stream<_, (PagEdge, Pair<u64, Duration>, isize)>  = pag::create_pag(scope, readers, index, 1);
 
             pag
+                .filter(move |(edge, _t, _diff)| if let Some(e) = epoch {
+                    edge.source.epoch == e
+                } else {
+                    true
+                })
                 .cpmetric(with_waiting)
                 .filter(|(_, c)| c > &1)
-                .inspect_time(|t, (x, c)| println!("CP {} | ep {} | w{}@{:?} -> w{}@{:?}",
+                .inspect_time(|t, (x, c)| println!("CP {} | ep {} | dur {:?} | w{}@{:?} -> w{}@{:?} | type {:?}",
                                                    c, t.first - 1,
+                                                   if x.destination.timestamp > x.source.timestamp {
+                                                       (x.destination.timestamp - x.source.timestamp)
+                                                   } else {
+                                                       Default::default()
+                                                   },
                                                    x.source.worker_id,
                                                    x.source.timestamp,
                                                    x.destination.worker_id,
-                                                   x.destination.timestamp));
+                                                   x.destination.timestamp,
+                                                   x.edge_type));
         });
     })
         .map_err(|x| STError(format!("error in the timely computation: {}", x)))?;
@@ -93,7 +107,11 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> CPMetric<S> for Stream<S, (PagEd
         // We do not want to traverse Waiting edges so remove them from the PAG
         let edges = self
             .map(|(edge, _t, _diff)| edge)
-            .filter(move |edge| with_waiting || edge.edge_type != ActivityType::Waiting)
+            .filter(move |edge| if with_waiting {
+                true
+            } else {
+                edge.edge_type != ActivityType::Waiting
+            })
             .exchange(|edge| edge.source.epoch);
 
         let forward = edges
@@ -107,7 +125,6 @@ impl<S: Scope<Timestamp = Pair<u64, Duration>>> CPMetric<S> for Stream<S, (PagEd
         let output = edges.group_explore(&forward, "CP Forward", true);
         let output2 = edges.group_explore(&backward, "CP Backward", false);
         let combined = output.concat(&output2);
-            // .inspect(|x| println!("explore: {:?}", x));
 
         // Compute betweeness centrality
         combined.aggregate::<_,Vec<u64>,_,_,_>(

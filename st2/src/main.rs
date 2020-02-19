@@ -87,12 +87,17 @@ fn run() -> Result<(), STError> {
         .subcommand(
             clap::SubCommand::with_name("cp")
                 .about("run ST2 CP Metric")
+                .arg(clap::Arg::with_name("epoch")
+                    .short("e")
+                    .long("epoch")
+                    .value_name("NUM")
+                    .help("The epoch for which to compute the CP metric")
+                    .default_value("metrics.csv"))
                 .arg(clap::Arg::with_name("with_waiting")
                      .short("w")
                      .long("with-waiting")
-                     .value_name("BOOL")
-                     .help("Set to true to include waiting activities during CP metric calculation.")
-                     .default_value("false"))
+                     .multiple(false)
+                     .help("Set to include waiting activities during CP metric calculation."))
         )
         .subcommand(
             clap::SubCommand::with_name("algo")
@@ -172,13 +177,18 @@ fn run() -> Result<(), STError> {
             st2::commands::inspect::run(timely_configuration, replay_source)
         }
         ("cp", Some(cp_args)) => {
-            let with_waiting: bool = std::str::FromStr::from_str(cp_args.value_of("with_waiting").expect("error parsing with waiting arg"))
-                .expect("error converting waiting arg to bool");
+            let with_waiting: bool = cp_args.is_present("with_waiting");
+
+            let epoch: Option<u64> = if let Some(t) = cp_args.value_of("epoch") {
+                Some(t.parse().map_err(|e| STError(format!("Invalid --epoch: {}", e)))?)
+            } else {
+                None
+            };
 
             let replay_source = make_replay_source(&args)?;
             println!("Connected!");
 
-            st2::commands::cp::run(timely_configuration, replay_source, with_waiting)
+            st2::commands::cp::run(timely_configuration, replay_source, with_waiting, epoch)
         }
         ("algo", Some(_algo_args)) => {
             let replay_source = make_replay_source(&args)?;
