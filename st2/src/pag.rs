@@ -191,6 +191,7 @@ pub fn create_pag<S: Scope<Timestamp = Pair<u64, Duration>>, R: 'static + Read> 
 ) -> Stream<S, (PagEdge, S::Timestamp, isize)> {
     create_lrs(scope, replayers, index, throttle)
         .construct_pag(index)
+//        .dump_pag(index)
 }
 
 /// Dump PAG to file

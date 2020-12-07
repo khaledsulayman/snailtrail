@@ -44,7 +44,7 @@ pub fn run(
             let file = Arc::clone(&file);
 
             if index == 0 {
-                expect_write(writeln!(*file.lock().unwrap(), "epoch,from_worker,to_worker,activity_type,#(activities),t(activities),#(records)"));
+                expect_write(writeln!(*file.lock().unwrap(), "from_epoch,from_timestamp,from_workerid,from_seqno,to_epoch,to_timestamp,to_workerid,to_seqno,edge_type,edge_operatorid"));
             }
 
             let pag = pag::create_pag(scope, readers, index, throttle);
